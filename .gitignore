@@ -1,0 +1,7 @@
+# Python's virtual env
+/.venv/
+__pycache__/
+*.pyc
+
+# Credentials
+credentials.json
