@@ -22,7 +22,7 @@ def fetch_all_vampires():
     # This is the magic query for Scryfall
     # q=t:vampire -> type is vampire
     # unique:art -> collapse results by unique illustration_id
-    search_url = "https://api.scryfall.com/cards/search?q=t:vampire+unique:art"
+    search_url = "https://api.scryfall.com/cards/search?q=t:vampire+(game:paper)&unique=art&order=released&dir=asc"
 
     print("Starting Scryfall query...")
 
@@ -65,18 +65,45 @@ def process_data(cards_json):
         image_uris = card.get('image_uris', {}) # Default to empty dict
         
         processed_list.append({
-            "Name": card.get('name'),
-            "Set": card.get('set_name'),
-            "Artist": card.get('artist'),
+            "art_crop": image_uris.get('art_crop', 'N/A'),
             # Check if 'foil' is in the list of available finishes
-            "Foil Exists": 'foil' in card.get('finishes', []), 
-            "Image URL": image_uris.get('art_crop', 'N/A'),
-            "Scryfall Link": card.get('scryfall_uri')
+            "finishes": 'foil' in card.get('finishes', []), 
+            "name": card.get('name'),
+            "type_line": card.get('type_line'),
+            "set": card.get('set_name'),
+            "collector_number": card.get('collector_number'),
+            "artist": card.get('artist'),
+            "scryfall_uri": card.get('scryfall_uri'),
         })
     
     print(f"Processed {len(processed_list)} records.")
-    return processed_list
+    
+    # Convert the list into a Pandas DataFrame for easy handling
+    df = pd.DataFrame(processed_list)
+    # Convierte el índice (0,1,2...) en una columna "index"
+    df = df.reset_index() 
+    df['album_page'] = (df['index'] // 9) + 1
+    df['album_position'] = (df['index'] % 9) + 1
+    
+    final_column_order = [
+        # Aux
+            'index', 
+            'scryfall_uri',
+            'art_crop',        
+        # View    
+            'album_page', 
+            'album_position', 
+            'finishes', 
+            'name', 
+            'type_line', 
+            'set', 
+            'collector_number', 
+            'artist', 
+        ]
+    
+    df = df[final_column_order]
 
+    return df
 
 def update_sheet(dataframe, sheet_name, worksheet_name, creds_path):
     """
@@ -134,12 +161,10 @@ if __name__ == "__main__":
     if raw_cards_data:
         # 2. Transform
         # Process the raw JSON into a clean list
-        processed_data = process_data(raw_cards_data)
-        # Convert the list into a Pandas DataFrame for easy handling
-        df = pd.DataFrame(processed_data)
+        processed_df = process_data(raw_cards_data)
         
         # 3. Load
         # Upload the DataFrame to Google Sheets
-        update_sheet(df, SHEET_NAME, WORKSHEET_NAME, CREDS_FILE)
+        update_sheet(processed_df, SHEET_NAME, WORKSHEET_NAME, CREDS_FILE)
         
         print("\n--- Process completed ---")
