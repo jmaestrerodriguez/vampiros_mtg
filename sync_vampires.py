@@ -82,14 +82,14 @@ def process_data(cards_json):
     df = pd.DataFrame(processed_list)
     # Convierte el índice (0,1,2...) en una columna "index"
     df = df.reset_index() 
-    df['album_page'] = (df['index'] // 9) + 1
-    df['album_position'] = (df['index'] % 9) + 1
+    df['album_page'] = (df['index'] // 18) + 1
+    df['album_position'] = (df['index'] % 18) + 1
     
     final_column_order = [
         # Aux
             'index', 
             'scryfall_uri',
-            'art_crop',        
+            'art_crop',       
         # View    
             'album_page', 
             'album_position', 
