@@ -38,6 +38,38 @@ WORKSHEET_NAME = CONFIG["worksheet_name"]
 CREDS_FILE = "credentials.json"
 # ---------------------
 
+def run_sync_prod(request):
+    """
+    Función principal para ser llamada por Google Cloud.
+    Ejecuta el pipeline completo para el entorno PROD.
+    """
+    # Define las variables de PROD aquí dentro
+    SHEET_NAME = "vampiros_mtg_prod"
+    WORKSHEET_NAME = "master"
+    CREDS_FILE = "credentials.json" # Google Cloud usará las suyas
+
+    print("Modo PROD (Cloud Function): Llamando a la API de Scryfall...")
+    raw_cards_data = fetch_all_vampires()
+
+    if not raw_cards_data:
+        print("Error: No se pudieron cargar los datos. Saliendo.")
+        return "Error: No data from Scryfall", 500
+
+    print(f"Procesando y actualizando el sheet '{SHEET_NAME}'...")
+    processed_df = process_data(raw_cards_data)
+
+    # OJO: ¿Dónde están las credenciales?
+    # En Cloud Functions, no usas el JSON. 
+    # Usas las credenciales "por defecto" de la cuenta de servicio de la función.
+    # Debes cambiar tu función 'update_sheet' para que 'gc = gspread.oauth()'
+    # (Esto es un cambio mayor, pero es el paso final)
+    # Por ahora, asumamos que subes tu JSON junto al script.
+
+    update_sheet(processed_df, SHEET_NAME, WORKSHEET_NAME, CREDS_FILE)
+
+    print(f"\n--- Proceso completado para el entorno PROD ---")
+    return "OK", 200
+
 def load_cache_from_file(cache_file):
     """Carga los datos en crudo desde un archivo JSON de caché."""
     print(f"Modo DEV: Cargando datos desde el caché local '{cache_file}'...")
