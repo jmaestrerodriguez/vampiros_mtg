@@ -4,8 +4,10 @@ import pandas as pd
 import time
 import sys
 import json
+import functions_framework
 
-def run_sync_prod(request):
+@functions_framework.cloud_event
+def main_cloud_function(request):
     """
     Función principal para ser llamada por Google Cloud.
     Ejecuta el pipeline completo para el entorno PROD.
@@ -210,4 +212,4 @@ def update_sheet(dataframe, sheet_name, worksheet_name, creds_path):
 # --- Main Execution Block ---
 # This code only runs when the script is executed directly
 if __name__ == "__main__":
-    run_sync_prod(0)
+    output = run_sync_prod(0)
