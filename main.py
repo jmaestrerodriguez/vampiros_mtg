@@ -7,7 +7,7 @@ import json
 import functions_framework
 
 @functions_framework.cloud_event
-def main_cloud_function(request):
+def main_cloud_function(cloud_event):
     """
     Función principal para ser llamada por Google Cloud.
     Ejecuta el pipeline completo para el entorno PROD.
