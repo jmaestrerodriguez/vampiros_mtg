@@ -5,39 +5,6 @@ import time
 import sys
 import json
 
-# --- CONFIGURACIÓN ---
-
-VAMPIRE_CACHE_FILE = "vampires_cache.json"
-
-# 1. Define tus entornos
-ENVIRONMENTS = {
-    "dev": {
-        "sheet_name": "vampiros_mtg_dev",
-        "worksheet_name": "master" 
-    },
-    "prod": {
-        "sheet_name": "vampiros_mtg_prod",
-        "worksheet_name": "master" 
-    }
-}
-
-# 2. Detecta el entorno desde el argumento de la línea de comandos
-try:
-    # Coge el primer argumento (ej. 'dev' o 'prod')
-    env_arg = sys.argv[1].lower() 
-    CONFIG = ENVIRONMENTS[env_arg]
-except (IndexError, KeyError):
-    # Si no se proporciona un argumento o es incorrecto, falla con un error
-    print(f"Error: Debes especificar un entorno válido.")
-    print(f"Uso: python {sys.argv[0]} [dev|prod]")
-    sys.exit(1) # Cierra el script
-
-# 3. Establece las variables de configuración
-SHEET_NAME = CONFIG["sheet_name"]
-WORKSHEET_NAME = CONFIG["worksheet_name"]
-CREDS_FILE = "credentials.json"
-# ---------------------
-
 def run_sync_prod(request):
     """
     Función principal para ser llamada por Google Cloud.
