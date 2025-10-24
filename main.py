@@ -207,9 +207,3 @@ def update_sheet(dataframe, sheet_name, worksheet_name, creds_path):
         print(f"Error: Tab named '{worksheet_name}' not found in the Sheet.")
     except Exception as e:
         print(f"An unexpected error occurred with Google Sheets: {e}")
-
-
-# --- Main Execution Block ---
-# This code only runs when the script is executed directly
-if __name__ == "__main__":
-    output = run_sync_prod(0)
