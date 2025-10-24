@@ -3,8 +3,12 @@ import gspread
 import pandas as pd
 import time
 import sys
+import json
 
 # --- CONFIGURACIÓN ---
+
+VAMPIRE_CACHE_FILE = "vampires_cache.json"
+
 # 1. Define tus entornos
 ENVIRONMENTS = {
     "dev": {
@@ -34,6 +38,25 @@ WORKSHEET_NAME = CONFIG["worksheet_name"]
 CREDS_FILE = "credentials.json"
 # ---------------------
 
+def load_cache_from_file(cache_file):
+    """Carga los datos en crudo desde un archivo JSON de caché."""
+    print(f"Modo DEV: Cargando datos desde el caché local '{cache_file}'...")
+    # NOTA: En esta versión, dejamos que el 'try/except' se maneje 
+    # en el bloque principal, para que podamos reaccionar al error.
+    with open(cache_file, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    print(f"Éxito: Cargados {len(data)} registros desde el caché.")
+    return data
+
+def save_cache_to_file(data, cache_file):
+    """Guarda los datos en crudo en un archivo JSON de caché."""
+    print(f"Guardando {len(data)} registros en '{cache_file}' para uso de DEV...")
+    try:
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2)
+        print("Caché local actualizado.")
+    except Exception as e:
+        print(f"ERROR: No se pudo guardar el caché. {e}")
 
 def fetch_all_vampires():
     """
@@ -107,7 +130,7 @@ def process_data(cards_json):
             "set": card.get('set_name'), 
             "collector_number": card.get('collector_number'),
             "artist": card.get('artist'),
-            "finishes": str(card.get('finishes', [])), # Convertir lista a string
+            "finishes": 'foil' in card.get('finishes', []), 
             "art_crop": art_crop, # Usamos nuestra variable 'art_crop'
             "scryfall_uri": card.get('scryfall_uri')
         })
@@ -188,18 +211,47 @@ def update_sheet(dataframe, sheet_name, worksheet_name, creds_path):
 # --- Main Execution Block ---
 # This code only runs when the script is executed directly
 if __name__ == "__main__":
+
+    raw_cards_data = None # Variable para guardar los datos
+
+    # --- 1. LÓGICA DE CARGA DE DATOS ---
+    if env_arg == "prod":
+        # PROD siempre llama a la API y NO toca el caché.
+        print(f"Modo PROD: Llamando a la API de Scryfall (esto puede tardar)...")
+        raw_cards_data = fetch_all_vampires()
     
-    # 1. Extract
-    # Fetch the raw data from the API
-    raw_cards_data = fetch_all_vampires()
-    # Only proceed if the data was successfully fetched
-    if raw_cards_data:
-        # 2. Transform
-        # Process the raw JSON into a clean list
-        processed_df = process_data(raw_cards_data)
+    elif env_arg == "dev":
+        # DEV intenta usar el caché. Si falla, llama a la API y crea el caché.
+        try:
+            # Intenta cargar el caché
+            raw_cards_data = load_cache_from_file(VAMPIRE_CACHE_FILE)
         
-        # 3. Load
-        # Upload the DataFrame to Google Sheets
-        update_sheet(processed_df, SHEET_NAME, WORKSHEET_NAME, CREDS_FILE)
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            # Si el caché no existe o está corrupto
+            print(f"Caché no encontrado (o corrupto). Llamando a la API para crear uno nuevo...")
+            raw_cards_data = fetch_all_vampires()
+            
+            # Si la llamada a la API fue exitosa, crea el caché para la próxima vez
+            if raw_cards_data:
+                save_cache_to_file(raw_cards_data, VAMPIRE_CACHE_FILE)
+
+    
+    # --- 2. LÓGICA DE PROCESADO Y ESCRITURA ---
+    
+    # Si, después de todo, no tenemos datos, salimos.
+    if not raw_cards_data:
+        print("Error: No se pudieron cargar los datos. Saliendo.")
+        sys.exit(1)
         
-        print("\n--- Process completed ---")
+    print(f"Procesando y actualizando el sheet '{SHEET_NAME}'...")
+
+    # 2. Transformar
+    # (Llamamos a tu función, que ya se encarga de todo el procesado)
+    processed_df = process_data(raw_cards_data)
+    
+    # 3. Load
+    # Upload the DataFrame to Google Sheets
+    update_sheet(processed_df, SHEET_NAME, WORKSHEET_NAME, CREDS_FILE)
+    
+    print(f"\n--- Proceso completado para el entorno {env_arg.upper()} ---")
+  
