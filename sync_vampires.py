@@ -2,10 +2,11 @@ import requests
 import gspread
 import pandas as pd
 import time
+import pyarrow
 
 # --- CONFIGURATION ---
 # The EXACT name of your Google Sheet
-SHEET_NAME = "vampiros_mtg" 
+SHEET_NAME = "vampiros_mtg_dev" 
 # The name of the tab (worksheet) where the script will dump the data
 WORKSHEET_NAME = "master"
 # The name of your credentials file
@@ -53,27 +54,41 @@ def fetch_all_vampires():
     print(f"Scryfall query complete. Total illustrations: {len(all_cards)}")
     return all_cards
 
-
 def process_data(cards_json):
     """
     Transforms the raw JSON response from Scryfall into a clean
-    list of dictionaries, ready for a Pandas DataFrame.
+    list of dictionaries, using Scryfall API key names as columns.
+    
+    This version correctly handles 'transform' (two-faced) cards
+    by checking the 'card_faces' array for image URIs.
     """
     processed_list = []
     for card in cards_json:
-        # Use .get() to safely access keys that might not exist
-        image_uris = card.get('image_uris', {}) # Default to empty dict
         
+        art_crop = 'N/A' # Valor por defecto
+        
+        # Primero, comprueba si la clave 'card_faces' existe y no está vacía
+        if card.get('card_faces') and len(card['card_faces']) > 0:
+            # Es una carta de dos caras (Transform, Modal, etc.)
+            # Cogemos las imágenes de la PRIMERA CARA
+            face_uris = card['card_faces'][0].get('image_uris', {})
+            art_crop = face_uris.get('art_crop', 'N/A')
+        else:
+            # Es una carta normal de una sola cara
+            top_level_uris = card.get('image_uris', {})
+            art_crop = top_level_uris.get('art_crop', 'N/A')
+            
         processed_list.append({
-            "art_crop": image_uris.get('art_crop', 'N/A'),
-            # Check if 'foil' is in the list of available finishes
-            "finishes": 'foil' in card.get('finishes', []), 
-            "name": card.get('name'),
+            # Las otras claves (name, type_line, etc.) están bien
+            # en el nivel superior, incluso para cartas transform.
+            "name": card.get('name'), 
             "type_line": card.get('type_line'),
-            "set": card.get('set_name'),
+            "set": card.get('set_name'), 
             "collector_number": card.get('collector_number'),
             "artist": card.get('artist'),
-            "scryfall_uri": card.get('scryfall_uri'),
+            "finishes": str(card.get('finishes', [])), # Convertir lista a string
+            "art_crop": art_crop, # Usamos nuestra variable 'art_crop'
+            "scryfall_uri": card.get('scryfall_uri')
         })
     
     print(f"Processed {len(processed_list)} records.")
@@ -98,7 +113,9 @@ def process_data(cards_json):
             'type_line', 
             'set', 
             'collector_number', 
-            'artist', 
+            'artist',
+        # Debug
+        #    'art_crop_0',
         ]
     
     df = df[final_column_order]
@@ -156,7 +173,7 @@ if __name__ == "__main__":
     # 1. Extract
     # Fetch the raw data from the API
     raw_cards_data = fetch_all_vampires()
-    
+    #df = pd.read_parquet(nombre_archivo)
     # Only proceed if the data was successfully fetched
     if raw_cards_data:
         # 2. Transform
