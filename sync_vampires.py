@@ -2,14 +2,35 @@ import requests
 import gspread
 import pandas as pd
 import time
-import pyarrow
+import sys
 
-# --- CONFIGURATION ---
-# The EXACT name of your Google Sheet
-SHEET_NAME = "vampiros_mtg_dev" 
-# The name of the tab (worksheet) where the script will dump the data
-WORKSHEET_NAME = "master"
-# The name of your credentials file
+# --- CONFIGURACIÓN ---
+# 1. Define tus entornos
+ENVIRONMENTS = {
+    "dev": {
+        "sheet_name": "vampiros_mtg_dev",
+        "worksheet_name": "master" 
+    },
+    "prod": {
+        "sheet_name": "vampiros_mtg_prod",
+        "worksheet_name": "master" 
+    }
+}
+
+# 2. Detecta el entorno desde el argumento de la línea de comandos
+try:
+    # Coge el primer argumento (ej. 'dev' o 'prod')
+    env_arg = sys.argv[1].lower() 
+    CONFIG = ENVIRONMENTS[env_arg]
+except (IndexError, KeyError):
+    # Si no se proporciona un argumento o es incorrecto, falla con un error
+    print(f"Error: Debes especificar un entorno válido.")
+    print(f"Uso: python {sys.argv[0]} [dev|prod]")
+    sys.exit(1) # Cierra el script
+
+# 3. Establece las variables de configuración
+SHEET_NAME = CONFIG["sheet_name"]
+WORKSHEET_NAME = CONFIG["worksheet_name"]
 CREDS_FILE = "credentials.json"
 # ---------------------
 
@@ -114,8 +135,6 @@ def process_data(cards_json):
             'set', 
             'collector_number', 
             'artist',
-        # Debug
-        #    'art_crop_0',
         ]
     
     df = df[final_column_order]
@@ -173,7 +192,6 @@ if __name__ == "__main__":
     # 1. Extract
     # Fetch the raw data from the API
     raw_cards_data = fetch_all_vampires()
-    #df = pd.read_parquet(nombre_archivo)
     # Only proceed if the data was successfully fetched
     if raw_cards_data:
         # 2. Transform
