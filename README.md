@@ -58,7 +58,7 @@ Ensure you have the following installed:
     1. checkout working branch (feat/bugfix). If it doesn't exist:
     2. git checkout main (git status to validate we are pointing to main)
     3. git pull (to update local main)
-    4. ```git checkout -b [feat|bugfix]/[new-branch-name]
+    4. ```git checkout -b [feat|bugfix]/[new-branch-name]```
 
 4. Work
 5. Test
