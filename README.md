@@ -55,10 +55,23 @@ Ensure you have the following installed:
     .venv/Scripts/Activate.ps1
     ```
 3. Git setup.
-    1. checkout working branch (feat/bugfix). If it doesn't exist:
+    1. checkout working branch (feat/bugfix).
+    ```bash
+    git checkout -b [feat|bugfix]/[new-branch-name]
+    ```
+     If it doesn't exist:
     2. git checkout main (git status to validate we are pointing to main)
+    ```bash
+    git checkout main
+    ```
     3. git pull (to update local main)
-    4. ```git checkout -b [feat|bugfix]/[new-branch-name]
+    ```bash
+    git pull
+    ```
+    4. git checkout -b (create new branch) 
+    ```bash 
+    git checkout -b [feat|bugfix|chore]/[new-branch-name]
+    ```
 
 4. Work
 5. Test
@@ -68,7 +81,12 @@ Ensure you have the following installed:
     ```
     Pro
     ```bash
-    python .\sync_vampires.py pro
+    python .\sync_vampires.py prod
     ```
 6. git add, commit, push.
+    ```bash
+    git git add .\[File-or-folder-name]
+    git commit -m "[feat|bugfix|chore]: [Description of changes]"
+    git push origin [feat|bugfix|chore]/[new-branch-name]
+    ```
 7. github: PR main <- [working_branch], merge, delete [working_branch], create new release.
