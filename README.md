@@ -85,8 +85,12 @@ Ensure you have the following installed:
     ```
 6. git add, commit, push.
     ```bash
-    git git add .\[File-or-folder-name]
+    git add .\[File-or-folder-name]
+    ```
+    ```bash
     git commit -m "[feat|bugfix|chore]: [Description of changes]"
+    ```
+    ```bash
     git push origin [feat|bugfix|chore]/[new-branch-name]
     ```
 7. github: PR main <- [working_branch], merge, delete [working_branch], create new release.
