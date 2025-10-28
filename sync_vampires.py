@@ -121,7 +121,14 @@ def process_data(cards_json):
             # Es una carta normal de una sola cara
             top_level_uris = card.get('image_uris', {})
             art_crop = top_level_uris.get('art_crop', 'N/A')
-            
+
+        prices = card.get('prices', {}) # Get the prices object, or empty dict
+        # Prioritize foil price in euros
+        eur_price = prices.get('eur_foil') # Try to get foil price
+        # If foil price is None or not available, try the regular euro price
+        if not eur_price:
+            eur_price = prices.get('eur', 'N/A') # Fallback to regular price, then 'N/A'
+
         processed_list.append({
             # Las otras claves (name, type_line, etc.) están bien
             # en el nivel superior, incluso para cartas transform.
@@ -130,9 +137,11 @@ def process_data(cards_json):
             "set": card.get('set_name'), 
             "collector_number": card.get('collector_number'),
             "artist": card.get('artist'),
-            "finishes": 'foil' in card.get('finishes', []), 
+            "is_foil": 'foil' in card.get('finishes', []), 
             "art_crop": art_crop, # Usamos nuestra variable 'art_crop'
-            "scryfall_uri": card.get('scryfall_uri')
+            "scryfall_uri": card.get('scryfall_uri'),
+            "rarity": card.get('rarity'),
+            "eur_price": eur_price,
         })
     
     print(f"Processed {len(processed_list)} records.")
@@ -141,8 +150,11 @@ def process_data(cards_json):
     df = pd.DataFrame(processed_list)
     # Convierte el índice (0,1,2...) en una columna "index"
     df = df.reset_index() 
-    df['album_page'] = (df['index'] // 18) + 1
     df['album_position'] = (df['index'] % 18) + 1
+    df['album_sheet'] = (df['index'] // 18) + 1
+    df['album_slot'] = ['Front' if (pos < 9) else 'Back' for pos in (df['index'] % 18)]
+    df['album_page']= (df['index'] // 9) + 1
+    df['slot_position'] = (df['index'] % 9) + 1
     
     final_column_order = [
         # Aux
@@ -150,14 +162,20 @@ def process_data(cards_json):
             'scryfall_uri',
             'art_crop',       
         # View    
-            'album_page', 
+            'album_sheet', 
             'album_position', 
-            'finishes', 
+            'album_page', 
+            'album_slot', 
+            'slot_position',
+        # Card info                 
+            'is_foil', 
             'name', 
             'type_line', 
             'set', 
             'collector_number', 
             'artist',
+            'rarity',
+            'eur_price',
         ]
     
     df = df[final_column_order]
