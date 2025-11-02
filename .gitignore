@@ -2,8 +2,14 @@
 /.venv/
 __pycache__/
 *.pyc
+# Environment files
+.env*
 
 # Credentials
-credentials.json
+credentials*.json
 
+# Cache for local run
 vampires_cache.json
+
+# Debug
+.vscode/

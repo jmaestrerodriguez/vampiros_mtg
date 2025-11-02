@@ -77,11 +77,15 @@ Ensure you have the following installed:
 5. Test
     Dev
     ```bash
-    python .\sync_vampires.py dev
+    python .\local_run.py dev
+    ```
+    Pre
+    ```bash
+    python .\local_run.py pre
     ```
     Pro
     ```bash
-    python .\sync_vampires.py prod
+    python .\local_run.py pro
     ```
 6. git add, commit, push.
     ```bash
