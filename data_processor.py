@@ -81,5 +81,6 @@ def process_data(cards_json):
         ]
     
     df = df[final_column_order]
+    df = df.fillna("")
 
     return df
